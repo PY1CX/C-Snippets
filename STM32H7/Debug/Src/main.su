@@ -1,0 +1,6 @@
+main.c:88:6:t_LEDBLINK	8	static
+main.c:97:6:t_SPI_Write	16	static
+main.c:208:6:SystemClock_Config	320	static
+main.c:116:5:main	16	static
+main.c:297:6:HAL_TIM_PeriodElapsedCallback	0	static
+main.c:315:6:_Error_Handler	0	static
