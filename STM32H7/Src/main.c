@@ -52,10 +52,12 @@
 #include "eth.h"
 #include "i2c.h"
 #include "spi.h"
+#include "usart.h"
 #include "gpio.h"
 
+#include <string.h>
 /* USER CODE BEGIN Includes */
-
+#define DEBUG
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -76,6 +78,21 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN 0 */
 
+// SerialDebug Semaphore & global variable used only thru semaphore
+SemaphoreHandle_t xSerialDSemaphore;
+#define _strDebug_SIZE (50)
+char _strDebug[_strDebug_SIZE];
+
+void f_writeDEBUG(char * formt){
+	if( xSemaphoreTake( xSerialDSemaphore, (TickType_t) 2) == pdTRUE ){
+		sprintf(_strDebug, formt);
+		HAL_UART_Transmit(&huart3, (uint8_t *)_strDebug, sizeof(_strDebug), 100);
+		strcpy(_strDebug, ""); //Flush the string
+		//As it is a Blocking transmit, we can give semaphore back now
+		xSemaphoreGive( xSerialDSemaphore );
+	}
+}
+
 /*
  * FreeRTOS Tasks & Semaphore Declaration
  */
@@ -84,10 +101,15 @@ void MX_FREERTOS_Init(void);
 SemaphoreHandle_t xI2CSemaphore;
 #include "si70xx.h"
 
+//Si70xx_data Queue Handle
+QueueHandle_t QueueSi70xx_data;
+
 /* Blink a Led Task*/
 void t_LEDBLINK(void * pvParameters){
 	for(;;){
+
 		HAL_GPIO_TogglePin(GPIOB, LD2_Pin);
+		f_writeDEBUG("LED BLINK\r\n");
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
@@ -101,6 +123,7 @@ void t_SPI_Write(void * pvParameters){
 	TickType_t xLastWakeTime;
 	for(;;){
 		xLastWakeTime = xTaskGetTickCount();
+
 		data_to_be_sent[0] = Fake_REG;
 		data_to_be_sent[1] = x;
 		HAL_SPI_Transmit(&hspi2, data_to_be_sent, 2, 100);
@@ -141,15 +164,52 @@ int main(void)
   MX_ETH_Init();
   MX_SPI2_Init();
   MX_I2C1_Init();
+  MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
   /* Create I2C Semaphore */
   if (xI2CSemaphore == NULL){
 	  xI2CSemaphore = xSemaphoreCreateMutex();
+#ifdef DEBUG
+	  vQueueAddToRegistry(xI2CSemaphore, (char*)"I2C");
+#endif
   } else {
 	  xSemaphoreGive(xI2CSemaphore);
   }
+
+  if (xSerialDSemaphore == NULL){
+	  xSerialDSemaphore = xSemaphoreCreateMutex();
+#ifdef DEBUG
+	  vQueueAddToRegistry(xSerialDSemaphore, (char*)"Serial Debug");
+#endif
+  } else {
+	  xSemaphoreGive(xSerialDSemaphore);
+  }
+
+  if(QueueSi70xx_data == NULL){
+	  QueueSi70xx_data = xQueueCreate(2, sizeof(struct si70xx_));
+
+	  /* Create the Si70xx task*/
+	  xTaskCreate(t_si70xx_read_TEMP_HUMI,
+			  	  "Task si70xx",
+				  128,
+				  (void*) QueueSi70xx_data,
+				  1,
+				  NULL);
+
+	  /* Create the receiver task*/
+	  xTaskCreate(t_si70xx_receive,
+			  	  "Task rx si70xx",
+				  128,
+				  (void*) QueueSi70xx_data,
+				  1,
+				  NULL);
+#ifdef DEBUG
+	  vQueueAddToRegistry( QueueSi70xx_data, (char*)"Si70xx_data" );
+#endif
+  }
+
 
   /* Create Task that Blinks the LED */
   xTaskCreate(t_LEDBLINK,
@@ -167,15 +227,6 @@ int main(void)
 			  2,
 			  NULL);
 
-  /* Create the dummy SPI task*/
-  xTaskCreate(t_si70xx_read_TEMP_HUMI,
-		  	  "Task si70xx",
-			  128,
-			  NULL,
-			  2,
-			  NULL);
-
-
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
@@ -191,10 +242,6 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
-
-	  /*
-	   * CODE SHOULD NEVER ARRIVE HERE
-	   */
 
   /* USER CODE BEGIN 3 */
 
@@ -262,8 +309,10 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2|RCC_PERIPHCLK_I2C1;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_SPI2
+                              |RCC_PERIPHCLK_I2C1;
   PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
+  PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
   PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {

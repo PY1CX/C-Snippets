@@ -16,16 +16,9 @@ void t_si70xx_read_TEMP_HUMI(void * pvParameters){
 	static uint8_t _REG;
 	static uint8_t si70xx_data[2];
 
-	struct si70xx_{
-		float humidity;
-		float temperature;
-	};
-
 	static struct si70xx_ si70xx_reading;
 
-	QueueSi70xx_data = xQueueCreate(2, sizeof(si70xx_reading));
-
-	if(QueueSi70xx_data == NULL){/*Think about catch the error of queue not beeing created*/}
+	QueueHandle_t QueueSi70xx_data = (QueueHandle_t) pvParameters;
 
 	for(;;){
 		xLastWakeTime = xTaskGetTickCount();
@@ -51,7 +44,6 @@ void t_si70xx_read_TEMP_HUMI(void * pvParameters){
 			/*
 			 *  Convert humidity read to float
 			 */
-
 			//Get the temperature from last RH measurement
 			_REG = si70xx_READ_TEMP_LAST_RH_MEAS;
 			HAL_I2C_Master_Transmit( &hi2c1, si70xx_ADDR, &_REG, 1, 100);
@@ -72,5 +64,19 @@ void t_si70xx_read_TEMP_HUMI(void * pvParameters){
 _sleep:
 		// Using TaskDelayUntil to make it really 1s between sensor acquisition
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(si70xx_RATE_MEASUREMENT));
+	}
+}
+
+void t_si70xx_receive( void * pvParameters ){
+	static struct si70xx_ si70xx_reading;
+
+	QueueHandle_t QueueSi70xx_data = (QueueHandle_t) pvParameters;
+
+	for(;;){
+		if(xQueueReceive(QueueSi70xx_data, &si70xx_reading , pdMS_TO_TICKS(5000)) != pdPASS){
+
+		}else{
+
+		}
 	}
 }

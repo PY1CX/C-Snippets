@@ -14,6 +14,11 @@ enum _si70xx{
 	si70xx_RATE_MEASUREMENT		  = 1000
 };
 
+struct si70xx_{
+	float humidity;
+	float temperature;
+};
+
 /*
 #define si70xx_ADDR 0x40
 #define si70xx_MEAS_HUM_NO_HOLD 0xF5
@@ -22,7 +27,7 @@ enum _si70xx{
 
 #define RATE_MEASUREMENT 1000 //Rate in milliseconds
 */
-QueueHandle_t QueueSi70xx_data;
 SemaphoreHandle_t xI2CSemaphore; // V-E-R-I-F-I-C-A-R
 
 void t_si70xx_read_TEMP_HUMI(void * pvParameters);
+void t_si70xx_receive       (void * pvParameters);
