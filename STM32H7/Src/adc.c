@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : SPI.c
+  * File Name          : ADC.c
   * Description        : This file provides code for the configuration
-  *                      of the SPI instances.
+  *                      of the ADC instances.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -48,7 +48,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "spi.h"
+#include "adc.h"
 
 #include "gpio.h"
 
@@ -56,110 +56,106 @@
 
 /* USER CODE END 0 */
 
-SPI_HandleTypeDef hspi2;
+ADC_HandleTypeDef hadc1;
 
-/* SPI2 init function */
-void MX_SPI2_Init(void)
+/* ADC1 init function */
+void MX_ADC1_Init(void)
 {
+  ADC_MultiModeTypeDef multimode;
+  ADC_ChannelConfTypeDef sConfig;
 
-  hspi2.Instance = SPI2;
-  hspi2.Init.Mode = SPI_MODE_MASTER;
-  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi2.Init.DataSize = SPI_DATASIZE_4BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi2.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi2.Init.CRCPolynomial = 7;
-  hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  hspi2.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
-  hspi2.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
-  hspi2.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-  hspi2.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-  hspi2.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-  hspi2.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-  hspi2.Init.MasterReceiverAutoSusp = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-  hspi2.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-  hspi2.Init.IOSwap = SPI_IO_SWAP_DISABLE;
-  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+    /**Common config 
+    */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_16B;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfDiscConversion = 1;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
+  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+  hadc1.Init.BoostMode = ENABLE;
+  hadc1.Init.OversamplingMode = DISABLE;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure the ADC multi-mode 
+    */
+  multimode.Mode = ADC_MODE_INDEPENDENT;
+  if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure Regular Channel 
+    */
+  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
 }
 
-void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
+void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct;
-  if(spiHandle->Instance==SPI2)
+  if(adcHandle->Instance==ADC1)
   {
-  /* USER CODE BEGIN SPI2_MspInit 0 */
+  /* USER CODE BEGIN ADC1_MspInit 0 */
 
-  /* USER CODE END SPI2_MspInit 0 */
-    /* SPI2 clock enable */
-    __HAL_RCC_SPI2_CLK_ENABLE();
+  /* USER CODE END ADC1_MspInit 0 */
+    /* ADC1 clock enable */
+    __HAL_RCC_ADC12_CLK_ENABLE();
   
-    /**SPI2 GPIO Configuration    
-    PC2_C     ------> SPI2_MISO
-    PC3_C     ------> SPI2_MOSI
-    PB10     ------> SPI2_SCK
-    PB4     ------> SPI2_NSS 
+    /**ADC1 GPIO Configuration    
+    PB1     ------> ADC1_INP5 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pin = GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = GPIO_PIN_10;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_4;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF7_SPI2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /* USER CODE BEGIN ADC1_MspInit 1 */
 
-  /* USER CODE BEGIN SPI2_MspInit 1 */
-
-  /* USER CODE END SPI2_MspInit 1 */
+  /* USER CODE END ADC1_MspInit 1 */
   }
 }
 
-void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
+void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 {
 
-  if(spiHandle->Instance==SPI2)
+  if(adcHandle->Instance==ADC1)
   {
-  /* USER CODE BEGIN SPI2_MspDeInit 0 */
+  /* USER CODE BEGIN ADC1_MspDeInit 0 */
 
-  /* USER CODE END SPI2_MspDeInit 0 */
+  /* USER CODE END ADC1_MspDeInit 0 */
     /* Peripheral clock disable */
-    __HAL_RCC_SPI2_CLK_DISABLE();
+    __HAL_RCC_ADC12_CLK_DISABLE();
   
-    /**SPI2 GPIO Configuration    
-    PC2_C     ------> SPI2_MISO
-    PC3_C     ------> SPI2_MOSI
-    PB10     ------> SPI2_SCK
-    PB4     ------> SPI2_NSS 
+    /**ADC1 GPIO Configuration    
+    PB1     ------> ADC1_INP5 
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_2|GPIO_PIN_3);
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_1);
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10|GPIO_PIN_4);
+  /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
-  /* USER CODE BEGIN SPI2_MspDeInit 1 */
-
-  /* USER CODE END SPI2_MspDeInit 1 */
+  /* USER CODE END ADC1_MspDeInit 1 */
   }
 } 
 

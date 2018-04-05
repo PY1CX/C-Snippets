@@ -1,7 +1,8 @@
+
 /**
   ******************************************************************************
-  * File Name          : main.c
-  * Description        : Main program body
+  * @file           : main.c
+  * @brief          : Main program body
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -49,15 +50,17 @@
 #include "main.h"
 #include "stm32h7xx_hal.h"
 #include "cmsis_os.h"
+#include "adc.h"
 #include "eth.h"
 #include "i2c.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
-#include <string.h>
 /* USER CODE BEGIN Includes */
 #define DEBUG
+#include "string.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -79,6 +82,7 @@ void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN 0 */
 
 // SerialDebug Semaphore & global variable used only thru semaphore
+
 SemaphoreHandle_t xSerialDSemaphore;
 #define _strDebug_SIZE (50)
 char _strDebug[_strDebug_SIZE];
@@ -109,7 +113,10 @@ void t_LEDBLINK(void * pvParameters){
 	for(;;){
 
 		HAL_GPIO_TogglePin(GPIOB, LD2_Pin);
-		f_writeDEBUG("LED BLINK\r\n");
+		//f_writeDEBUG("LED BLINK\r\n");
+		ITM_SendChar(64);
+		printf("B");
+
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
@@ -136,9 +143,13 @@ void t_SPI_Write(void * pvParameters){
 
 /* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  *
+  * @retval None
+  */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -149,6 +160,10 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  //Enable ITM
+
+   volatile uint32_t *ITM_LAR = (volatile uint32_t *)0xE0000FB0; // ITM->LAR
+  *ITM_LAR = 0xC5ACCE55; // Enable Access
 
   /* USER CODE END Init */
 
@@ -161,28 +176,29 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ETH_Init();
   MX_SPI2_Init();
   MX_I2C1_Init();
   MX_USART3_UART_Init();
-
+  MX_ADC1_Init();
+  MX_ETH_Init();
   /* USER CODE BEGIN 2 */
 
   /* Create I2C Semaphore */
   if (xI2CSemaphore == NULL){
 	  xI2CSemaphore = xSemaphoreCreateMutex();
-#ifdef DEBUG
+	  #ifdef DEBUG
 	  vQueueAddToRegistry(xI2CSemaphore, (char*)"I2C");
-#endif
+	  #endif
   } else {
 	  xSemaphoreGive(xI2CSemaphore);
   }
 
+  /* Create Serial Debug Semaphore */
   if (xSerialDSemaphore == NULL){
 	  xSerialDSemaphore = xSemaphoreCreateMutex();
-#ifdef DEBUG
+	  #ifdef DEBUG
 	  vQueueAddToRegistry(xSerialDSemaphore, (char*)"Serial Debug");
-#endif
+	  #endif
   } else {
 	  xSemaphoreGive(xSerialDSemaphore);
   }
@@ -205,13 +221,14 @@ int main(void)
 				  (void*) QueueSi70xx_data,
 				  1,
 				  NULL);
-#ifdef DEBUG
+
+	  #ifdef DEBUG
 	  vQueueAddToRegistry( QueueSi70xx_data, (char*)"Si70xx_data" );
-#endif
+	  #endif
   }
 
-
   /* Create Task that Blinks the LED */
+
   xTaskCreate(t_LEDBLINK,
 		  	  "Task Led",
 			  128,
@@ -250,8 +267,10 @@ int main(void)
 
 }
 
-/** System Clock Configuration
-*/
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
 
@@ -271,6 +290,10 @@ void SystemClock_Config(void)
   {
     
   }
+    /**Macro to configure the PLL clock source 
+    */
+  __HAL_RCC_PLL_PLLSOURCE_CONFIG(RCC_PLLSOURCE_HSI);
+
     /**Initializes the CPU, AHB and APB busses clocks 
     */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
@@ -310,10 +333,19 @@ void SystemClock_Config(void)
   }
 
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_SPI2
-                              |RCC_PERIPHCLK_I2C1;
+                              |RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_I2C1;
+  PeriphClkInitStruct.PLL2.PLL2M = 32;
+  PeriphClkInitStruct.PLL2.PLL2N = 129;
+  PeriphClkInitStruct.PLL2.PLL2P = 2;
+  PeriphClkInitStruct.PLL2.PLL2Q = 2;
+  PeriphClkInitStruct.PLL2.PLL2R = 2;
+  PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_1;
+  PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
+  PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
   PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
   PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
   PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
+  PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -345,58 +377,56 @@ void SystemClock_Config(void)
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-/* USER CODE BEGIN Callback 0 */
+  /* USER CODE BEGIN Callback 0 */
 
-/* USER CODE END Callback 0 */
+  /* USER CODE END Callback 0 */
   if (htim->Instance == TIM1) {
     HAL_IncTick();
   }
-/* USER CODE BEGIN Callback 1 */
+  /* USER CODE BEGIN Callback 1 */
 
-/* USER CODE END Callback 1 */
+  /* USER CODE END Callback 1 */
 }
 
 /**
   * @brief  This function is executed in case of error occurrence.
-  * @param  None
+  * @param  file: The file name as string.
+  * @param  line: The line in file as a number.
   * @retval None
   */
-void _Error_Handler(char * file, int line)
+void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   while(1) 
   {
   }
-  /* USER CODE END Error_Handler_Debug */ 
+  /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
-
+#ifdef  USE_FULL_ASSERT
 /**
-   * @brief Reports the name of the source file and the source line number
-   * where the assert_param error has occurred.
-   * @param file: pointer to the source file name
-   * @param line: assert_param error line source number
-   * @retval None
-   */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t* file, uint32_t line)
-{
+{ 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
-
 }
-
-#endif
-
-/**
-  * @}
-  */ 
+#endif /* USE_FULL_ASSERT */
 
 /**
   * @}
-*/ 
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

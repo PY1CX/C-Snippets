@@ -73,10 +73,9 @@ void t_si70xx_receive( void * pvParameters ){
 	QueueHandle_t QueueSi70xx_data = (QueueHandle_t) pvParameters;
 
 	for(;;){
-		if(xQueueReceive(QueueSi70xx_data, &si70xx_reading , pdMS_TO_TICKS(5000)) != pdPASS){
+		if(xQueueReceive(QueueSi70xx_data, &si70xx_reading , portMAX_DELAY) != pdPASS){
 
 		}else{
-
 		}
 	}
 }
