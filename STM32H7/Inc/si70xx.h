@@ -5,6 +5,7 @@
 #include "queue.h"
 
 
+
 enum _si70xx{
 	si70xx_ADDR  				  = 0x40,
 	si70xx_READ_TEMP_LAST_RH_MEAS = 0xE0,
@@ -17,6 +18,7 @@ enum _si70xx{
 struct si70xx_{
 	float humidity;
 	float temperature;
+
 };
 
 /*

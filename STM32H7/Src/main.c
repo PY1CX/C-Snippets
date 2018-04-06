@@ -60,7 +60,10 @@
 /* USER CODE BEGIN Includes */
 #define DEBUG
 #include "string.h"
-
+#include "queue_test.h"
+#include "leds.h"
+#include <stdarg.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -82,20 +85,31 @@ void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN 0 */
 
 // SerialDebug Semaphore & global variable used only thru semaphore
-
 SemaphoreHandle_t xSerialDSemaphore;
-#define _strDebug_SIZE (50)
-char _strDebug[_strDebug_SIZE];
 
-void f_writeDEBUG(char * formt){
-	if( xSemaphoreTake( xSerialDSemaphore, (TickType_t) 2) == pdTRUE ){
-		sprintf(_strDebug, formt);
-		HAL_UART_Transmit(&huart3, (uint8_t *)_strDebug, sizeof(_strDebug), 100);
-		strcpy(_strDebug, ""); //Flush the string
-		//As it is a Blocking transmit, we can give semaphore back now
-		xSemaphoreGive( xSerialDSemaphore );
-	}
+/*
+ * Printf in Serial 3 (Virtual serial of Nucleo-144 with STLINK
+ */
+int __io_putchar(int ch)
+{
+ uint8_t c[1];
+ c[0] = ch & 0x00FF;
+ HAL_UART_Transmit(&huart3, &*c, 1, 10);
+ return ch;
 }
+
+int _write(int file,char *ptr, int len)
+{
+if( xSemaphoreTake( xSerialDSemaphore, (TickType_t) 2) == pdTRUE ){
+	 int DataIdx;
+	 for(DataIdx= 0; DataIdx< len; DataIdx++){
+	 __io_putchar(*ptr++);
+	 }
+	 xSemaphoreGive( xSerialDSemaphore );
+}
+return len;
+}
+
 
 /*
  * FreeRTOS Tasks & Semaphore Declaration
@@ -108,15 +122,11 @@ SemaphoreHandle_t xI2CSemaphore;
 //Si70xx_data Queue Handle
 QueueHandle_t QueueSi70xx_data;
 
-/* Blink a Led Task*/
-void t_LEDBLINK(void * pvParameters){
+/* DO NOTHING Task*/
+void t_DONOTHING(void * pvParameters){
 	for(;;){
 
-		HAL_GPIO_TogglePin(GPIOB, LD2_Pin);
-		//f_writeDEBUG("LED BLINK\r\n");
-		ITM_SendChar(64);
-		printf("B");
-
+		HAL_Delay(10000);
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
@@ -160,10 +170,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  //Enable ITM
-
-   volatile uint32_t *ITM_LAR = (volatile uint32_t *)0xE0000FB0; // ITM->LAR
-  *ITM_LAR = 0xC5ACCE55; // Enable Access
 
   /* USER CODE END Init */
 
@@ -211,7 +217,7 @@ int main(void)
 			  	  "Task si70xx",
 				  128,
 				  (void*) QueueSi70xx_data,
-				  1,
+				  2,
 				  NULL);
 
 	  /* Create the receiver task*/
@@ -219,7 +225,7 @@ int main(void)
 			  	  "Task rx si70xx",
 				  128,
 				  (void*) QueueSi70xx_data,
-				  1,
+				  2,
 				  NULL);
 
 	  #ifdef DEBUG
@@ -227,14 +233,7 @@ int main(void)
 	  #endif
   }
 
-  /* Create Task that Blinks the LED */
 
-  xTaskCreate(t_LEDBLINK,
-		  	  "Task Led",
-			  128,
-			  NULL,
-			  2,
-			  NULL);
 
   /* Create the dummy SPI task*/
   xTaskCreate(t_SPI_Write,
@@ -243,6 +242,16 @@ int main(void)
 			  NULL,
 			  2,
 			  NULL);
+
+  /* Create the dummy SPI task*/
+  /*xTaskCreate(t_DONOTHING,
+		  	  "Task FULL CPU",
+			  128,
+			  NULL,
+			  1,
+			  NULL);*/
+  init_leds();
+  queue_test_init();
 
   /* USER CODE END 2 */
 
