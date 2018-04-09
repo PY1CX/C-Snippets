@@ -51,6 +51,7 @@
 #include "stm32h7xx_hal.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "dma.h"
 #include "eth.h"
 #include "i2c.h"
 #include "spi.h"
@@ -64,13 +65,14 @@
 #include "leds.h"
 #include <stdarg.h>
 #include <string.h>
+#include "aqc_adc.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+int y;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,7 +96,10 @@ int __io_putchar(int ch)
 {
  uint8_t c[1];
  c[0] = ch & 0x00FF;
+ y++;
+ while(HAL_UART_GetState(&huart3) != HAL_UART_STATE_READY);//Wait until UART is ready
  HAL_UART_Transmit(&huart3, &*c, 1, 10);
+
  return ch;
 }
 
@@ -182,6 +187,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI2_Init();
   MX_I2C1_Init();
   MX_USART3_UART_Init();
@@ -233,8 +239,6 @@ int main(void)
 	  #endif
   }
 
-
-
   /* Create the dummy SPI task*/
   xTaskCreate(t_SPI_Write,
 		  	  "Task SPI_TX",
@@ -252,6 +256,10 @@ int main(void)
 			  NULL);*/
   init_leds();
   queue_test_init();
+  init_adc();
+
+
+
 
   /* USER CODE END 2 */
 
@@ -407,7 +415,7 @@ void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  while(1) 
+  while(1)
   {
   }
   /* USER CODE END Error_Handler_Debug */

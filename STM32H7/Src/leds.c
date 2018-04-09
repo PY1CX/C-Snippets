@@ -38,11 +38,11 @@ xTaskCreate(t_LEDBLINK,
 			NULL,
 			2,
 			NULL);
-
+/*
 xTaskCreate(t_LEDBLINK2,
 			"Task Led 2",
 			128,
 			NULL,
 			2,
-			NULL);
+			NULL);*/
 }
