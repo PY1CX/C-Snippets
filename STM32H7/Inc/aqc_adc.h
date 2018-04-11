@@ -4,7 +4,7 @@
 #include "stm32h7xx_hal_adc.h"
 
 TaskHandle_t th_adc;
-uint32_t adc_array[2];
+
 int kk_fl_half_adc;
 int kk_fl_compl_adc;
 void init_adc(void);

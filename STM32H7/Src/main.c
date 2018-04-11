@@ -66,6 +66,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include "aqc_adc.h"
+#include "arm_math.h"
+#include "fft_tetra.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -247,7 +249,7 @@ int main(void)
 			  2,
 			  NULL);
 
-  /* Create the dummy SPI task*/
+  /* Create the dummy FULL CPU task*/
   /*xTaskCreate(t_DONOTHING,
 		  	  "Task FULL CPU",
 			  128,
@@ -257,8 +259,7 @@ int main(void)
   init_leds();
   queue_test_init();
   init_adc();
-
-
+  init_fft();
 
 
   /* USER CODE END 2 */
