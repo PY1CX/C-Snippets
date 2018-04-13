@@ -2,6 +2,7 @@
 #include "adc.h"
 #include "dma.h"
 #include "stm32h7xx_hal_adc.h"
+#include "arm_math.h"
 
 TaskHandle_t th_adc;
 

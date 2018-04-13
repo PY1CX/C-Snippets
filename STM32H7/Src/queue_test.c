@@ -29,7 +29,7 @@ void t_Q_generate (void * pvParameters){
 		xQueueSendToBack(Queue_data, &ch_t, 0);
 		ch_t++;
 		if(ch_t > 'z') { ch_t = 'a'; }
-		vTaskDelay(pdMS_TO_TICKS(1000));
+		vTaskDelay(pdMS_TO_TICKS(100));
 	}
 }
 

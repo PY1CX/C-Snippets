@@ -55,11 +55,13 @@
 #include "eth.h"
 #include "i2c.h"
 #include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
 #define DEBUG
+
 #include "string.h"
 #include "queue_test.h"
 #include "leds.h"
@@ -75,6 +77,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 int y;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,16 +95,16 @@ void MX_FREERTOS_Init(void);
 SemaphoreHandle_t xSerialDSemaphore;
 
 /*
- * Printf in Serial 3 (Virtual serial of Nucleo-144 with STLINK
+ * Printf in Serial 3 (Virtual serial of Nucleo-144 with STLINK)
  */
 int __io_putchar(int ch)
 {
  uint8_t c[1];
  c[0] = ch & 0x00FF;
- y++;
+
  while(HAL_UART_GetState(&huart3) != HAL_UART_STATE_READY);//Wait until UART is ready
  HAL_UART_Transmit(&huart3, &*c, 1, 10);
-
+ y++;
  return ch;
 }
 
@@ -133,8 +136,8 @@ QueueHandle_t QueueSi70xx_data;
 void t_DONOTHING(void * pvParameters){
 	for(;;){
 
-		HAL_Delay(10000);
-		vTaskDelay(pdMS_TO_TICKS(1000));
+		//HAL_Delay(10000);
+		//vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
 
@@ -156,6 +159,17 @@ void t_SPI_Write(void * pvParameters){
 		/* pdMS_TO_TICKS is a macro to convert milliseconds to TICKS */
 		vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(50) );
 	}
+}
+
+
+/* RUN TIME STATS FOR ATOLLIC TRUESTUDIO */
+volatile unsigned long ulHighFrequencyTimerTicks = 0;
+
+void start_tim3_it(void){
+	HAL_TIM_Base_Start_IT(&htim3);
+}
+unsigned long return_timer_ticks(void){
+	return ulHighFrequencyTimerTicks;
 }
 
 /* USER CODE END 0 */
@@ -195,6 +209,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_ADC1_Init();
   MX_ETH_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   /* Create I2C Semaphore */
@@ -260,7 +275,6 @@ int main(void)
   queue_test_init();
   init_adc();
   init_fft();
-
 
   /* USER CODE END 2 */
 
@@ -402,6 +416,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
+  //Timer 3 Callback for RunTimeStats in Atollic
+  if (htim->Instance == TIM3) {
+      ulHighFrequencyTimerTicks++;
+  }/* Increment the counter used to mease execution time */
 
   /* USER CODE END Callback 1 */
 }
