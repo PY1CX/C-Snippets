@@ -1,2 +1,2 @@
 # C-Snippets
-Some Snippets in C that I'm testing
+Some Snippets or random code in C that I'm trying to keep a backup
