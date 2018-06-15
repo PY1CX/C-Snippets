@@ -276,34 +276,3 @@ void t_read_temp(void *pvParameters){
 	}
 
 }
-
-
-
-
-/*
- *  	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	vTaskNotifyGiveFromISR(th_adc, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
- */
-
-
-/*
-
- 	if( xSemaphoreTake( xSPI1_Semaphore, (TickType_t) 5) == pdTrue ){
-
-		uint8_t _reg = pvPortMalloc(sizeof(uint8_t));
-		//Get the values in the CONFIG REGISTER
-		if(HAL_SPI_Transmit(&hspi1, MAX31865_CONFIG_REG_R, 1, 10) == HAL_OK ){
-			if(HAL_SPI_Receive(&hspi1, _reg, 1, 10) == HAL_OK){
-				_reg |= ( 1UL << ONE_SHOT ); //Set ONE_SHOT conversion
-				if(HAL_SPI_Transmit(&hspi1, _reg, 1, 10) == HAL_OK){
-						xSemaphoreGive(xSPI1_Semaphore);
-						pvPortFree(_reg);
-						return 1;
-					}
-				}
-			}
-		}
- *
- */
