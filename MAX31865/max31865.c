@@ -139,24 +139,28 @@ void t_read_temp(void * pvParameters){
 	for(;;){
 
 		result = begin_one_shot_cnv(Mutex_SPI);
-/*
+
+
 		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
 		regx = RTD_MSB_R;
 		HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
 
 		HAL_SPI_Receive(&hspi1, &res1, 1, 10);
+		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
 		regx = RTD_LSB_R;
+		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
 		HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
 
 		HAL_SPI_Receive(&hspi1, &res2, 1, 10);
-
+		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
 		regx = FAULT_STATUS_R;
+		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
 		HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
 
 		HAL_SPI_Receive(&hspi1, &res3, 1, 10);
 		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
-*/
-		vTaskDelay(pdMS_TO_TICKS(100));
+
+		vTaskDelay(pdMS_TO_TICKS(300));
 	}
 }
 /*
@@ -171,13 +175,20 @@ void t_rx_temp(void * pvParameters){
 		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
 
 
+
+
+
 	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	  if (GPIO_Pin == GPIO_PIN_5)
+	  {
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	  }
+
 
 }
