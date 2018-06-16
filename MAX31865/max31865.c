@@ -4,6 +4,13 @@
  *	MAX31865 Driver
  *	Author: Felipe Navarro
  *
+ *	Fault Common Numbers:
+ *	-3 Semaphore
+ *	-2 SPI
+ *	-1 Wrong Configuration
+ *
+ *	 1 Represent Success
+ *
  */
 
 #include "max31865.h"
@@ -13,6 +20,7 @@ int8_t result;
 uint8_t regx;
 
 uint8_t res1,res2,res3;
+uint16_t res_rtd;
 
 /*
  * 	Function Blocks
@@ -132,7 +140,12 @@ int8_t MAX31865_config_hard_coded(SemaphoreHandle_t * Mutex_SPI){
 	return 1;
 }
 
-//TODO:
+/*
+ *  TASK Function Read_Temp
+ *  Function responsible for implementing the config (hard coded in the code)
+ *  and also getting one shot conversions.
+ *
+ */
 void t_read_temp(void * pvParameters){
 
 	SemaphoreHandle_t Mutex_SPI = (SemaphoreHandle_t) pvParameters;
@@ -158,18 +171,22 @@ void t_read_temp(void * pvParameters){
 }
 
 /*
- *  Task to Receive the Signal that we have a result in
- *  the temperature conversion and rx it.
+ *  Task to Receive the Signal that we have Data Ready (signaled by the DRDY low)
+ *  and get the results.
  *
  */
 void t_rx_temp(void * pvParameters){
 	SemaphoreHandle_t Mutex_SPI = (SemaphoreHandle_t) pvParameters;
 
 	for(;;){
-		ulTaskNotifyTake( pdTRUE, portMAX_DELAY  );
+		ulTaskNotifyTake( pdTRUE, portMAX_DELAY  ); //Wait until we get a Task Notification
 
+		//Verify if the DRDY is really LOW before getting the Semaphore
 		if(HAL_GPIO_ReadPin(DRDY_MAX31865_GPIO_Port, DRDY_MAX31865_Pin) == GPIO_PIN_RESET){
+
+			//If we really have a Conversion to acquire, try getting the semaphore
 			if( xSemaphoreTake( Mutex_SPI, (TickType_t) 5) == pdTRUE ){
+
 			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
 			regx = RTD_MSB_R;
 			HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
@@ -189,6 +206,12 @@ void t_rx_temp(void * pvParameters){
 			HAL_SPI_Receive(&hspi1, &res3, 1, 10);
 			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
 			xSemaphoreGive(Mutex_SPI);
+
+			res_rtd = res1 << 8;
+			res_rtd |= res2;
+			res_rtd >>= 1;
+			res_rtd /= 32;
+			res_rtd -= 256;
 			}
 		}
 
