@@ -7,11 +7,13 @@
  */
 
 #include "max31865.h"
+
+// Global vars for Debug purpose
 int8_t result;
 uint8_t regx;
 
 uint8_t res1,res2,res3;
-uint8_t index_task1, index_task2;
+
 /*
  * 	Function Blocks
  */
@@ -49,7 +51,7 @@ int8_t begin_one_shot_cnv(SemaphoreHandle_t * Mutex_SPI){
 
 		//Check before sending ONE_SHOT command if AUTOMATIC isn't enabled
 		if( (__areg & (1 << CONVERSION_MODE)) == 0 ){
-			__reg_addr = 0x80;
+			__reg_addr = CONFIG_W;
 			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
 			if(HAL_SPI_Transmit(&hspi1, &__reg_addr, 1, 10) != HAL_OK ){
 				goto spi_one_shot_error;
@@ -69,8 +71,8 @@ int8_t begin_one_shot_cnv(SemaphoreHandle_t * Mutex_SPI){
 		if(HAL_SPI_Transmit(&hspi1, &__areg, 1, 10) != HAL_OK){
 			goto spi_one_shot_error;
 		}
-
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET); //Get CS down as fast as possible so the conversion starts.
+		//Get CS down as fast as possible so the conversion starts.
+		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
 		xSemaphoreGive(Mutex_SPI);
 		return 1;
 	}
@@ -135,18 +137,22 @@ void t_read_temp(void * pvParameters){
 
 	SemaphoreHandle_t Mutex_SPI = (SemaphoreHandle_t) pvParameters;
 
-	 result = MAX31865_config_hard_coded(Mutex_SPI);
+	//Config MAX31865
+	result = MAX31865_config_hard_coded(Mutex_SPI);
+
+	/*
+	 * Guard Clause - Get conversion result if for some reason there is some results
+	 * signaled with the DRDY low.
+	 */
+	if(HAL_GPIO_ReadPin(DRDY_MAX31865_GPIO_Port, DRDY_MAX31865_Pin) == GPIO_PIN_RESET){
+		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+		vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	}
+
 
 	for(;;){
-		/*if(HAL_GPIO_ReadPin(DRDY_MAX31865_GPIO_Port, DRDY_MAX31865_Pin) == GPIO_PIN_RESET){
-			index_task1++;
-			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-			vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
-			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-		}
-		else{*/
-			result = begin_one_shot_cnv(Mutex_SPI);
-		//}
+		result = begin_one_shot_cnv(Mutex_SPI);
 		vTaskDelay(pdMS_TO_TICKS(300));
 	}
 }
@@ -182,7 +188,6 @@ void t_rx_temp(void * pvParameters){
 
 			HAL_SPI_Receive(&hspi1, &res3, 1, 10);
 			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
-			index_task2++;
 			xSemaphoreGive(Mutex_SPI);
 			}
 		}
