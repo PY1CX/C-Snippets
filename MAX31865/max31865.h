@@ -5,11 +5,14 @@
  *	Author: Felipe Navarro
  *
  */
-
+#include "main.h"
+#include "stm32f4xx_hal.h"
+#include "cmsis_os.h"
 #include "spi.h"
 #include "gpio.h"
-#include "FreeRTOS.h"
+#include "queue.h"
 
+TaskHandle_t RTD_RX_Task;
 
 /*  FAULT BITS ON FAULT STATUS REGISTER
  *  Table 7 from Datasheet:
@@ -33,7 +36,7 @@ enum MAX31865_CONFIG_REG_BITS{
 		LINEFILTER = 0,
 		FAULT_STATUS_CLEAR,
 		WIRE_NUMBER = 4,
-		ONE_SHOT,
+		ONE_SHOT = 5,
 		CONVERSION_MODE,
 		VBIAS
 } MAX31865_CONFIG_REG_BITS;
@@ -59,21 +62,13 @@ enum MAX31865_REGISTERS{
 	LOW_FAULT_THRESHOLD_LSB_W
 } MAX31865_REGISTERS;
 
-
-#define SET_BIT(x,bit) ((x) |= (1UL << (bit)))
-#define CLR_BIT(x,bit) ((x) &= ~(1UL << (bit)))
-
-
-_write_reg8();
-
-_read_reg8();
+//#define SET_BIT(x,bit) ((x) |= (1UL << (bit)))
+//#define CLR_BIT(x,bit) ((x) &= ~(1UL << (bit)))
 
 //Function Prototypes
-int8_t begin_one_shot_cnv(void);
-int8_t MAX31865_config_hard_coded(void);
-int8 MAX31865_clear_fault(void);
-int8_t MAX31865_write_reg(uint8_t _reg_add, uint8_t value);
-int8_t MAX31865_read_reg(uint8_t _reg_add, uint8_t * result);
-int8_t MAX31865_generic_config(int8_t cnv_mode, int8_t wire_conf, int8_t filter);
-int8_t MAX31865_read_temp_reg(void);
-void t_read_temp(void *pvParameters){
+int8_t begin_one_shot_cnv(SemaphoreHandle_t * Mutex_SPI);
+int8_t MAX31865_config_hard_coded(SemaphoreHandle_t * Mutex_SPI);
+void t_read_temp(void * pvParameters);
+void t_rx_temp(void * pvParameters);
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+
