@@ -10,7 +10,8 @@
 int8_t result;
 uint8_t regx;
 
-int8_t res1,res2,res3;
+uint8_t res1,res2,res3;
+uint8_t index_task1, index_task2;
 /*
  * 	Function Blocks
  */
@@ -137,32 +138,19 @@ void t_read_temp(void * pvParameters){
 	 result = MAX31865_config_hard_coded(Mutex_SPI);
 
 	for(;;){
-
-		result = begin_one_shot_cnv(Mutex_SPI);
-
-
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
-		regx = RTD_MSB_R;
-		HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
-
-		HAL_SPI_Receive(&hspi1, &res1, 1, 10);
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
-		regx = RTD_LSB_R;
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
-
-		HAL_SPI_Receive(&hspi1, &res2, 1, 10);
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
-		regx = FAULT_STATUS_R;
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
-
-		HAL_SPI_Receive(&hspi1, &res3, 1, 10);
-		HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
-
+		/*if(HAL_GPIO_ReadPin(DRDY_MAX31865_GPIO_Port, DRDY_MAX31865_Pin) == GPIO_PIN_RESET){
+			index_task1++;
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		}
+		else{*/
+			result = begin_one_shot_cnv(Mutex_SPI);
+		//}
 		vTaskDelay(pdMS_TO_TICKS(300));
 	}
 }
+
 /*
  *  Task to Receive the Signal that we have a result in
  *  the temperature conversion and rx it.
@@ -172,9 +160,32 @@ void t_rx_temp(void * pvParameters){
 	SemaphoreHandle_t Mutex_SPI = (SemaphoreHandle_t) pvParameters;
 
 	for(;;){
-		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
+		ulTaskNotifyTake( pdTRUE, portMAX_DELAY  );
 
+		if(HAL_GPIO_ReadPin(DRDY_MAX31865_GPIO_Port, DRDY_MAX31865_Pin) == GPIO_PIN_RESET){
+			if( xSemaphoreTake( Mutex_SPI, (TickType_t) 5) == pdTRUE ){
+			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
+			regx = RTD_MSB_R;
+			HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
 
+			HAL_SPI_Receive(&hspi1, &res1, 1, 10);
+			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
+			regx = RTD_LSB_R;
+			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
+			HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
+
+			HAL_SPI_Receive(&hspi1, &res2, 1, 10);
+			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
+			regx = FAULT_STATUS_R;
+			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_RESET);
+			HAL_SPI_Transmit(&hspi1, &regx, 1, 10);
+
+			HAL_SPI_Receive(&hspi1, &res3, 1, 10);
+			HAL_GPIO_WritePin(CS_MAX31865_GPIO_Port, CS_MAX31865_Pin, GPIO_PIN_SET);
+			index_task2++;
+			xSemaphoreGive(Mutex_SPI);
+			}
+		}
 
 
 
@@ -183,12 +194,12 @@ void t_rx_temp(void * pvParameters){
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	  if (GPIO_Pin == GPIO_PIN_5)
-	  {
-			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-			vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
-			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-	  }
+	if (GPIO_Pin == GPIO_PIN_5)
+	{
+		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+		vTaskNotifyGiveFromISR(RTD_RX_Task, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	}
 
 
 }
