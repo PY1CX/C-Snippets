@@ -1,15 +1,8 @@
 /*
  *	ads1220.h
  *
- *	AD9833 Driver
+ *	ADS1220 Driver
  *	Author: Felipe Navarro
- *
- *	Fault Common Numbers:
- *	-3 Semaphore
- *	-2 SPI
- *	-1 Wrong Configuration
- *
- *	 1 Represent Success
  *
  */
 
@@ -183,6 +176,7 @@ enum ADS1220_FAULTS{
 	ADS1220_CONFIG_FAULT      = -1,
 	ADS1220_SUCCESS           =  0
 }ADS1220_FAULTS;
+
 // Functions and Tasks Prototypes
 
 
