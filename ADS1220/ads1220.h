@@ -178,5 +178,7 @@ enum ADS1220_FAULTS{
 }ADS1220_FAULTS;
 
 // Functions and Tasks Prototypes
-
+int8_t ADS1220_start_conversion(SemaphoreHandle_t * Mutex_SPI);
+int8_t ADS1220_config(SemaphoreHandle_t * Mutex_SPI);
+void t_RX_ADS1220(void * pvParameters);
 
