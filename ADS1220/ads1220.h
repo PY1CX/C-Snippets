@@ -14,6 +14,16 @@
 #include "queue.h"
 #include "arm_math.h"
 
+TaskHandle_t ADS1220_RX_Task;
+
+/*
+ *  Project related values
+ */
+
+#define VREF (2.048)
+
+#define PERIOD_PH_MEASUREMENT (300)
+
 /*
  *  ADS1220 Registers and Command Values
  */
@@ -119,6 +129,12 @@ enum ADS1220_CONFIG_VALUES{
 	ADS1220_VREF_ANALOG_SUPPLY,
 	ADS1220_VREF_BITMASK      = 0x3F,
 
+	ADS1220_FIR_FILTER_NONE   = 0x00,
+	ADS1220_FIR_FILTER_5060,
+	ADS1220_FIR_FILTER_50,
+	ADS1220_FIR_FILTER_60,
+	ADS1220_FIR_FILTER_BITMASK= 0xCF,
+
 	// Config Register 3
 	ADS1220_IDAC1_DISABLED    = 0x00,
 	ADS1220_IDAC1_AIN0_REFP1,
@@ -179,6 +195,8 @@ enum ADS1220_FAULTS{
 
 // Functions and Tasks Prototypes
 int8_t ADS1220_start_conversion(SemaphoreHandle_t * Mutex_SPI);
+int8_t WRITE_REG_ADS1220(uint8_t * _reg_addr, uint8_t * _reg_data);
 int8_t ADS1220_config(SemaphoreHandle_t * Mutex_SPI);
+void t_one_shot_ADS1220(void * pvParameters);
 void t_RX_ADS1220(void * pvParameters);
 
