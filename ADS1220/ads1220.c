@@ -130,11 +130,38 @@ void t_one_shot_ADS1220(void * pvParameters){
 void t_RX_ADS1220(void * pvParameters){
 
 	SemaphoreHandle_t Mutex_SPI = (SemaphoreHandle_t) pvParameters;
-
+	
+	uint8_t data_msb, data_lsb;
+	int16_t data_ads1220;
+	float32_t vout_o;
+	
 	for(;;){
 		//Wait forever until we receive a signal that the ADS1220 has some data to be received
 		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
+		
+		if( xSemaphoreTake( Mutex_SPI, (TickType_t) 5) == pdTRUE ){
+			HAL_GPIO_WritePin(CS_ADS1220_GPIO_Port , CS_ADS1220_Pin, GPIO_PIN_RESET); // Take CS LOW before writing to SPI
 
+			if(HAL_SPI_Transmit(&hspi1, &_areg, 1, 10) != HAL_OK ){
+				goto err_spi;
+			}
+
+			if(HAL_SPI_Receive(&hspi1, &data_msb, 1, 10) != HAL_OK){
+				goto err_spi;
+			}
+
+			if(HAL_SPI_Receive(&hspi1, &data_lsb, 1, 10) != HAL_OK){
+				goto err_spi;
+			}
+			//This can be done better
+			data_ads1220  = 0;
+			data_ads1220 |= (data_msb << 8) | data_lsb;
+			vout_o = (float) ((data_ads1220*VREF*1000)/FSR); //Vout is in mV range
+			
+		//Here everything comes if there is any kind of fault in the RX	
+		err_spi:
+			HAL_GPIO_WritePin(CS_ADS1220_GPIO_Port , CS_ADS1220_Pin, GPIO_PIN_SET);  // Rise CS after write
+			xSemaphoreGive(Mutex_SPI);		
 
 	}
 }
