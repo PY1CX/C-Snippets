@@ -22,7 +22,9 @@ TaskHandle_t ADS1220_RX_Task;
 
 #define VREF (2.048)
 
-#define PERIOD_PH_MEASUREMENT (300)
+#define PERIOD_PH_MEASUREMENT (50)
+
+#define FSR (((long int)1<<23)-1)
 
 /*
  *  ADS1220 Registers and Command Values
@@ -124,15 +126,15 @@ enum ADS1220_CONFIG_VALUES{
 	ADS1220_IDAC_BITMASK      = 0xF8,
 
 	ADS1220_VREF_INTERNAL     = 0x00,
-	ADS1220_VREF_REFP0_REFN0,
-	ADS1220_VREF_AIN0_AIN3,
-	ADS1220_VREF_ANALOG_SUPPLY,
+	ADS1220_VREF_REFP0_REFN0  = (1<<6),
+	ADS1220_VREF_AIN0_AIN3	  = (1<<7),
+	ADS1220_VREF_ANALOG_SUPPLY= (1<<6)|(1<<7),
 	ADS1220_VREF_BITMASK      = 0x3F,
 
 	ADS1220_FIR_FILTER_NONE   = 0x00,
-	ADS1220_FIR_FILTER_5060,
-	ADS1220_FIR_FILTER_50,
-	ADS1220_FIR_FILTER_60,
+	ADS1220_FIR_FILTER_5060   = (1<<4),
+	ADS1220_FIR_FILTER_50	  = (1<<5),
+	ADS1220_FIR_FILTER_60     = (1<<5)|(1<<4),
 	ADS1220_FIR_FILTER_BITMASK= 0xCF,
 
 	// Config Register 3
@@ -196,6 +198,8 @@ enum ADS1220_FAULTS{
 // Functions and Tasks Prototypes
 int8_t ADS1220_start_conversion(SemaphoreHandle_t * Mutex_SPI);
 int8_t WRITE_REG_ADS1220(uint8_t * _reg_addr, uint8_t * _reg_data);
+int8_t SEND_CMD_ADS1220(uint8_t * _reg_addr);
+void READ_CONFIG_REGISTERS(SemaphoreHandle_t Mutex_SPI);
 int8_t ADS1220_config(SemaphoreHandle_t * Mutex_SPI);
 void t_one_shot_ADS1220(void * pvParameters);
 void t_RX_ADS1220(void * pvParameters);
