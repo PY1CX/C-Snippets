@@ -1,0 +1,79 @@
+m255
+K3
+13
+cModel Technology
+dE:\altera\13.0sp1
+Ecounter_190
+Z0 w1530767304
+Z1 DPx4 ieee 18 std_logic_unsigned 0 22 RYmj;=TK`k=k>D@Cz`zoB3
+Z2 DPx4 ieee 15 std_logic_arith 0 22 4`Y?g_lkdn;7UL9IiJck01
+Z3 DPx3 std 6 textio 0 22 5>J:;AW>W0[[dW0I6EN1Q0
+Z4 DPx4 ieee 14 std_logic_1164 0 22 5=aWaoGZSMWIcH0i^f`XF1
+Z5 dE:\CODE\FPGA_Chinesa
+Z6 8E:/CODE/FPGA_Chinesa/contador.vhd
+Z7 FE:/CODE/FPGA_Chinesa/contador.vhd
+l0
+L7
+VL_=2Ke6Mc2j``aWZE0^Wa2
+!s100 85TGZFN0kQ^;Pk1eVzkSC1
+Z8 OV;C;10.1d;51
+32
+!i10b 1
+Z9 !s108 1530768681.730000
+Z10 !s90 -reportprogress|300|-work|work|-2002|-explicit|E:/CODE/FPGA_Chinesa/contador.vhd|
+Z11 !s107 E:/CODE/FPGA_Chinesa/contador.vhd|
+Z12 o-work work -2002 -explicit -O0
+Z13 tExplicit 1
+Abehavioral
+R1
+R2
+R3
+R4
+Z14 DEx4 work 11 counter_190 0 22 L_=2Ke6Mc2j``aWZE0^Wa2
+l16
+L14
+Z15 V23RfcQ@n0gQ816lPBjAQb1
+Z16 !s100 lfnCdmz6DQ2MQEeB20SYj0
+R8
+32
+!i10b 1
+R9
+R10
+R11
+R12
+R13
+Eteste
+Z17 w1530768557
+R5
+Z18 8E:/CODE/FPGA_Chinesa/tb_contador.vhd
+Z19 FE:/CODE/FPGA_Chinesa/tb_contador.vhd
+l0
+L4
+VUW?55^PUAQH1fo[lXd5g13
+R8
+32
+Z20 !s108 1530768681.328000
+Z21 !s90 -reportprogress|300|-work|work|-2002|-explicit|E:/CODE/FPGA_Chinesa/tb_contador.vhd|
+Z22 !s107 E:/CODE/FPGA_Chinesa/tb_contador.vhd|
+R12
+R13
+!s100 gz=[_Z25PE]2F4gAgVK`90
+!i10b 1
+Acounter
+DEx4 work 5 teste 0 22 UW?55^PUAQH1fo[lXd5g13
+R1
+R2
+R3
+R4
+l29
+L13
+V2@cV4^JhVSmeVKmIRHA6o3
+!s100 fbbXFQFJGT5@G<J27>RZR0
+R8
+32
+R20
+R21
+R22
+R12
+R13
+!i10b 1
