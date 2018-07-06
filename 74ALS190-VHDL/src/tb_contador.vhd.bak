@@ -34,14 +34,20 @@ counter1: counter_190 port map ( enable => enable_1, clock => clk_1, reset => re
 
 estimulo : process
 begin
-  wait for 5 ns; reset_1 <= '0'; enable_1 <= '1';
+  reset_1 <= '1'; enable_1 <= '1';
+  wait for 5 ns;   
+  enable_1 <= '0'; reset_1 <= '0';
+  wait for 40 ns;
 end process estimulo;
 
 clock_estimulo : process
 
 begin
-  wait for 1 ns; clk_1 <= '0';
-  wait for 1 ns; clk_1 <= '1';
+  clk_1 <= '0';
+  wait for 1 ns;
+  clk_1 <= '1';
+  wait for 1 ns;
+
 end process clock_estimulo;
 
 end counter;

@@ -19,7 +19,7 @@ begin   process(clock,reset)
          temp <= "0000";
       elsif(rising_edge(clock)) then
          if enable='0' then
-            if temp="1001" then
+            if temp="1111" then
                temp<="0000";
             else
                temp <= temp + 1;
