@@ -16,6 +16,7 @@ component counter_190
    port( enable: in std_logic;
  	 clock: in std_logic;
  	 reset: in std_logic;
+   direction: in std_logic;
  	 output: out std_logic_vector(0 to 3));
 end component;
 
@@ -25,10 +26,11 @@ signal clk_1    : std_logic;
 signal enable_1 : std_logic;
 signal reset_1  : std_logic;
 signal output_1 : std_logic_vector(0 to 3);
+signal direction_1    : std_logic;
   
 begin 
   
-counter1: counter_190 port map ( enable => enable_1, clock => clk_1, reset => reset_1, output => output_1 );
+counter1: counter_190 port map ( enable => enable_1, clock => clk_1, reset => reset_1, output => output_1, direction => direction_1 );
 
 -- estimulo
 
@@ -37,7 +39,7 @@ begin
   reset_1 <= '1'; enable_1 <= '1';
   wait for 5 ns;   
   enable_1 <= '0'; reset_1 <= '0';
-  wait for 20 ns;
+  wait for 80 ns;
 end process estimulo;
 
 clock_estimulo : process
@@ -49,5 +51,13 @@ begin
   wait for 1 ns;
 
 end process clock_estimulo;
+
+dir : process
+  begin
+  direction_1 <= '0';
+  wait for 30 ns;
+  direction_1 <= '1';
+  wait for 30 ns;
+  end process dir;
 
 end counter;
