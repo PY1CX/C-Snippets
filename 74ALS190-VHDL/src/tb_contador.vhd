@@ -37,7 +37,7 @@ begin
   reset_1 <= '1'; enable_1 <= '1';
   wait for 5 ns;   
   enable_1 <= '0'; reset_1 <= '0';
-  wait for 80 ns;
+  wait for 20 ns;
 end process estimulo;
 
 clock_estimulo : process
